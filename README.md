@@ -8,10 +8,13 @@ Users can input their experimental measurements in two ways:
 Importing an external file in .dat format, containing repeated measurements performed under the same experimental conditions.
 Direct input via the software’s graphical interface, usually by entering only the second column (N) corresponding to the measured values.
 SSD v1 then automatically performs classical statistical analysis of the data. The study generally follows several steps:
+#
 -Calculation of theoretical and experimental standard deviations, to assess the measurement dispersion and detector precision.
+#
 -Application of the Gaussian distribution adapted to the Poisson law, which accurately models the distribution of rare events typical in ionizing radiation measurements.
+#
 -Pearson’s chi-square (χ²) test, used to compare observed and theoretical distributions and validate the statistical consistency of the measurements.
-
+#
 SSD v1 is free software for non-commercial use only.
 © 2026 Lahcen El Amri
 [License](https://github.com/LAHCEN-EL-AMRI/SSD-V1/blob/main/LICENSE)   file for more information)
@@ -48,7 +51,7 @@ Example of the position of a studied detector on the chi-square test graph
 Java language must be pre-installed on the computer.
 - Without installation: Simply double-click on SSD v1.exe, see the screenshot below:
 
-  <img width="480" alt="gif4" src="https://github.com/LAHCEN-EL-AMRI/SSD-V1/blob/main/SSD%20v1/images/Fig4.png">
+  <img width="350" alt="gif4" src="https://github.com/LAHCEN-EL-AMRI/SSD-V1/blob/main/SSD%20v1/images/Fig4.png">
   
 
 
@@ -70,5 +73,5 @@ This project requis the following dependencies :
 * **LAHCEN EL AMRI** *lahssenelamri@gmail.com*  *Ph.D* * Laboratory of Condensed Matter and Interdisciplinary Sciences (LaMCScI), Faculty of Sciences, Mohammed V University, 4 Avenue Ibn Battouta, B.P. 1014, Rabat, Morocco.*
 
 # LICENSE
-This project is licensed under the SSD v3 Software License. See the [License](https://github.com/LAHCEN-EL-AMRI/SSD-V1/blob/main/LICENSE)
+This project is licensed under the SSD v1 Software License. See the [License](https://github.com/LAHCEN-EL-AMRI/SSD-V1/blob/main/LICENSE)
  file for more information.
