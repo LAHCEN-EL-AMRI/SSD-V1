@@ -1,0 +1,528 @@
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+
+import java.awt.Font;
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
+
+import java.awt.Color;
+import javax.swing.JButton;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.BorderFactory;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.LayoutStyle.ComponentPlacement;
+
+public class Main extends JFrame {
+
+	private static final long serialVersionUID = 1L;
+	private JPanel contentPane;
+	private JTextField textField;
+
+	// First table
+	private JTable table;
+	private DefaultTableModel tableModel;
+
+	// Second table
+	private JTable table2;
+	private DefaultTableModel tableModel2;
+	private JTextField textField_1;
+	private JTextField textField_2;
+	private JTextField textField_3;
+	private JTextField textField_4;
+	static JTextField textField_5;
+	static JTextField textField_6;
+	static JTextField textField_7;
+	private JTextField textField_8;
+	static JButton btnNewButton_5;
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					Main frame = new Main();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the frame.
+	 */
+	public Main() {
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(10, 10, 1168, 692);
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(contentPane);
+		
+		JPanel panel = new JPanel();
+		
+		JLabel lblNewLabel = new JLabel("Statistical study of the detector");
+		lblNewLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		lblNewLabel.setFont(new Font("Tahoma", Font.BOLD, 24));
+		
+		JLabel lblNewLabel_1 = new JLabel("Group width (l) :");
+		lblNewLabel_1.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		lblNewLabel_1.setFont(new Font("Tahoma", Font.BOLD, 12));
+		
+		textField = new JTextField();
+		textField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField.setText("6");
+		textField.setColumns(10);
+		
+		JLabel lblNewLabel_2 = new JLabel("*");
+		lblNewLabel_2.setForeground(new Color(255, 0, 0));
+		lblNewLabel_2.setFont(new Font("Tahoma", Font.PLAIN, 18));
+		
+		JButton btnNewButton = new JButton("Open file");
+		btnNewButton.setFont(new Font("Tahoma", Font.BOLD, 12));
+		btnNewButton.addActionListener(e -> {
+		    new FileLoader(table); // Appelle la nouvelle classe
+		});
+
+
+		/* ======================
+		   First JTable (i, N, ΔN)
+		   ====================== */
+		String[] columns1 = { "i", "N", "ΔN" };
+		tableModel = new DefaultTableModel(columns1, 0);
+
+		for (int i = 1; i <= 20; i++) {
+			tableModel.addRow(new Object[] { i, "", "" });
+		}
+
+		table = new JTable(tableModel);
+		table.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		table.setRowHeight(22);
+
+		JScrollPane scrollPane1 = new JScrollPane(table);
+		scrollPane1.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+
+
+		JButton btnAdd = new JButton("Add");
+		btnAdd.setFont(new Font("Tahoma", Font.BOLD, 12));
+		btnAdd.setBorder(new LineBorder(Color.BLACK));
+
+		JButton btnRemove = new JButton("Remove");
+		btnRemove.setFont(new Font("Tahoma", Font.BOLD, 12));
+		btnRemove.setBorder(new LineBorder(Color.BLACK));
+
+		btnAdd.addActionListener(e -> {
+			int index = tableModel.getRowCount() + 1;
+			tableModel.addRow(new Object[] { index, "", "" });
+		});
+
+		btnRemove.addActionListener(e -> {
+			int selectedRow = table.getSelectedRow();
+			if (selectedRow != -1) {
+				tableModel.removeRow(selectedRow);
+			}
+		});
+
+		/* ======================
+		   Equation above table 2
+		   ====================== */
+		JTextPane equationPane = new JTextPane();
+		equationPane.setFont(new Font("Tahoma", Font.BOLD, 12));
+		equationPane.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		equationPane.setContentType("text/html");
+		equationPane.setText(
+		    "<html>"
+		    + "<div style='white-space:nowrap; font-size:14pt;'>"
+		    + "P(X<sub>i</sub>) = 1 / &radic;(2&pi;&nbsp;X&#772;) "
+		    + "· e<sup>-(X<sub>i</sub> - X&#772;)² / (2X&#772;)</sup>"
+		    + "</div>"
+		    + "</html>"
+		);
+		equationPane.setEditable(false);
+		equationPane.setBackground(panel.getBackground());
+
+
+		/* ======================
+		   Second JTable (statistics)
+		   ====================== */
+		String[] columns2 = {
+				"Interval",
+				"X\u1D62",
+				"F(X\u1D62)",
+				"P(X\u1D62)",
+				"N·l·P(X\u1D62)"
+		};
+
+		tableModel2 = new DefaultTableModel(columns2, 0);
+
+		for (int i = 0; i < 20; i++) {
+			tableModel2.addRow(new Object[] { "", "", "", "", "" });
+		}
+
+		table2 = new JTable(tableModel2);
+		table2.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		table2.setRowHeight(22);
+
+		JScrollPane scrollPane2 = new JScrollPane(table2);
+		scrollPane2.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+
+		
+		JButton btnNewButton_1 = new JButton("Start the study");
+		btnNewButton_1.setForeground(new Color(255, 0, 0));
+		btnNewButton_1.setFont(new Font("Tahoma", Font.BOLD, 16));
+		btnNewButton_1.setBorder(new LineBorder(Color.BLACK));
+		btnNewButton_1.addActionListener(e -> {
+		    computeStatistics();
+		    buildIntervals();
+		});
+
+
+		
+		JPanel panel_1 = new JPanel();
+		panel_1.setBackground(new Color(192, 192, 192));
+		panel_1.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		panel_1.setLayout(null);
+		
+		JLabel lblNewLabel_3 = new JLabel("N = ");
+		lblNewLabel_3.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_3.setBounds(10, 26, 49, 14);
+		panel_1.add(lblNewLabel_3);
+		
+		textField_1 = new JTextField();
+		textField_1.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_1.setEditable(false);
+		textField_1.setBounds(42, 24, 59, 20);
+		panel_1.add(textField_1);
+		textField_1.setColumns(10);
+		
+		JLabel lblNewLabel_4 = new JLabel("X̄ = ");
+		lblNewLabel_4.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_4.setBounds(10, 69, 29, 14);
+		panel_1.add(lblNewLabel_4);
+		
+		textField_2 = new JTextField();
+		textField_2.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_2.setEditable(false);
+		textField_2.setBounds(42, 67, 59, 20);
+		panel_1.add(textField_2);
+		textField_2.setColumns(10);
+		
+		JLabel lblNewLabel_5 = new JLabel("<html>&sigma;<sub>theo</sub> =</html>");
+		lblNewLabel_5.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_5.setBounds(177, 26, 49, 18);
+		panel_1.add(lblNewLabel_5);
+		
+		JLabel lblNewLabel_6 = new JLabel("<html>&sigma;<sub>exp</sub> =</html>");
+		lblNewLabel_6.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_6.setBounds(177, 69, 49, 20);
+		panel_1.add(lblNewLabel_6);
+		
+		textField_3 = new JTextField();
+		textField_3.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_3.setEditable(false);
+		textField_3.setBounds(236, 24, 49, 20);
+		panel_1.add(textField_3);
+		textField_3.setColumns(10);
+		
+		textField_4 = new JTextField();
+		textField_4.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_4.setEditable(false);
+		textField_4.setBounds(236, 67, 49, 20);
+		panel_1.add(textField_4);
+		textField_4.setColumns(10);
+		
+		JLabel lblNewLabel_9 = new JLabel("Comment on the results :");
+		lblNewLabel_9.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_9.setBounds(315, 69, 196, 14);
+		panel_1.add(lblNewLabel_9);
+		
+		JPanel panel_2 = new JPanel();
+		panel_2.setBackground(new Color(192, 192, 192));
+		panel_2.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		panel_2.setLayout(null);
+		
+		JLabel lblNewLabel_10 = new JLabel("\u03C7\u00B2 =");
+		lblNewLabel_10.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_10.setBounds(23, 22, 49, 14);
+		panel_2.add(lblNewLabel_10);
+		
+		textField_6 = new JTextField();
+		textField_6.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_6.setEditable(false);
+		textField_6.setBounds(82, 20, 77, 20);
+		panel_2.add(textField_6);
+		textField_6.setColumns(10);
+		
+		JLabel lblNewLabel_11 = new JLabel("L = ");
+		lblNewLabel_11.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_11.setBounds(263, 22, 49, 14);
+		panel_2.add(lblNewLabel_11);
+		
+		textField_7 = new JTextField();
+		textField_7.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_7.setEditable(false);
+		textField_7.setBounds(305, 20, 89, 20);
+		panel_2.add(textField_7);
+		textField_7.setColumns(10);
+		
+		JLabel lblNewLabel_12 = new JLabel("P = ");
+		lblNewLabel_12.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_12.setBounds(460, 22, 49, 14);
+		panel_2.add(lblNewLabel_12);
+		
+		textField_8 = new JTextField();
+		textField_8.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_8.setEditable(false);
+		textField_8.setBounds(519, 20, 77, 20);
+		panel_2.add(textField_8);
+		textField_8.setColumns(10);
+		
+		JLabel lblNewLabel_13 = new JLabel("Comment on the results :");
+		lblNewLabel_13.setFont(new Font("Tahoma", Font.BOLD, 12));
+		lblNewLabel_13.setBounds(245, 79, 160, 14);
+		panel_2.add(lblNewLabel_13);
+		
+		
+		JButton btnNewButton_2 = new JButton("Graphical visualization");
+		btnNewButton_2.setFont(new Font("Tahoma", Font.BOLD, 11));
+		btnNewButton_2.setBorder(new LineBorder(Color.BLACK));
+		btnNewButton_2.addActionListener(e -> {
+		    new Graph(tableModel2);
+		});
+
+		
+		JButton btnNewButton_3 = new JButton("Add infos");
+		btnNewButton_3.setFont(new Font("Tahoma", Font.BOLD, 11));
+		btnNewButton_3.setBorder(new LineBorder(Color.BLACK));
+		
+		JButton btnNewButton_4 = new JButton("PDF export");
+		btnNewButton_4.setFont(new Font("Tahoma", Font.BOLD, 11));
+		btnNewButton_4.setBorder(new LineBorder(Color.BLACK));
+		GroupLayout gl_contentPane = new GroupLayout(contentPane);
+		gl_contentPane.setHorizontalGroup(
+			gl_contentPane.createParallelGroup(Alignment.LEADING)
+				.addGroup(Alignment.TRAILING, gl_contentPane.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(panel, GroupLayout.DEFAULT_SIZE, 1154, Short.MAX_VALUE))
+		);
+		gl_contentPane.setVerticalGroup(
+			gl_contentPane.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_contentPane.createSequentialGroup()
+					.addComponent(panel, GroupLayout.DEFAULT_SIZE, 628, Short.MAX_VALUE)
+					.addGap(22))
+		);
+		GroupLayout gl_panel = new GroupLayout(panel);
+		gl_panel.setHorizontalGroup(
+			gl_panel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel.createSequentialGroup()
+					.addGap(27)
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING, false)
+						.addComponent(btnNewButton_3, GroupLayout.PREFERRED_SIZE, 102, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnNewButton_4, GroupLayout.PREFERRED_SIZE, 102, GroupLayout.PREFERRED_SIZE))
+					.addGap(186)
+					.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, 165, Short.MAX_VALUE)
+					.addGap(184)
+					.addComponent(equationPane, GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)
+					.addGap(254))
+				.addGroup(gl_panel.createSequentialGroup()
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panel.createSequentialGroup()
+							.addGap(28)
+							.addComponent(scrollPane1, GroupLayout.DEFAULT_SIZE, 457, Short.MAX_VALUE))
+						.addGroup(gl_panel.createSequentialGroup()
+							.addGap(27)
+							.addComponent(btnAdd, GroupLayout.DEFAULT_SIZE, 77, Short.MAX_VALUE)
+							.addGap(18)
+							.addComponent(btnRemove, GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
+							.addGap(265)))
+					.addGap(10)
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 625, Short.MAX_VALUE)
+						.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 625, Short.MAX_VALUE)
+						.addComponent(scrollPane2, GroupLayout.DEFAULT_SIZE, 625, Short.MAX_VALUE)
+						.addGroup(gl_panel.createSequentialGroup()
+							.addGap(274)
+							.addComponent(btnNewButton_2, GroupLayout.DEFAULT_SIZE, 160, Short.MAX_VALUE)
+							.addGap(191)))
+					.addGap(34))
+				.addGroup(gl_panel.createSequentialGroup()
+					.addGap(27)
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addComponent(btnNewButton, GroupLayout.PREFERRED_SIZE, 102, GroupLayout.PREFERRED_SIZE)
+						.addGroup(gl_panel.createSequentialGroup()
+							.addComponent(lblNewLabel_1)
+							.addGap(1)
+							.addComponent(lblNewLabel_2, GroupLayout.PREFERRED_SIZE, 26, GroupLayout.PREFERRED_SIZE)))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addGap(185)
+					.addComponent(lblNewLabel)
+					.addContainerGap(333, Short.MAX_VALUE))
+		);
+		gl_panel.setVerticalGroup(
+			gl_panel.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_panel.createSequentialGroup()
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panel.createSequentialGroup()
+							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel.createSequentialGroup()
+									.addComponent(lblNewLabel_1)
+									.addGap(9)
+									.addComponent(btnNewButton, GroupLayout.DEFAULT_SIZE, 26, Short.MAX_VALUE))
+								.addGroup(gl_panel.createSequentialGroup()
+									.addGap(11)
+									.addComponent(lblNewLabel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+									.addGap(10)))
+							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel.createSequentialGroup()
+									.addGap(1)
+									.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+										.addGroup(gl_panel.createSequentialGroup()
+											.addGap(5)
+											.addComponent(btnNewButton_3, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE)
+											.addGap(6)
+											.addComponent(btnNewButton_4, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE))
+										.addGroup(gl_panel.createSequentialGroup()
+											.addGap(26)
+											.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+											.addGap(8)))
+									.addGap(3))
+								.addGroup(gl_panel.createSequentialGroup()
+									.addGap(18)
+									.addComponent(equationPane, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+									.addPreferredGap(ComponentPlacement.RELATED))))
+						.addGroup(gl_panel.createSequentialGroup()
+							.addComponent(lblNewLabel_2)
+							.addPreferredGap(ComponentPlacement.RELATED))
+						.addGroup(gl_panel.createSequentialGroup()
+							.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED)))
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panel.createSequentialGroup()
+							.addComponent(scrollPane1, GroupLayout.DEFAULT_SIZE, 479, Short.MAX_VALUE)
+							.addGap(11)
+							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+								.addComponent(btnAdd, GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
+								.addComponent(btnRemove, GroupLayout.PREFERRED_SIZE, 25, GroupLayout.PREFERRED_SIZE)))
+						.addGroup(gl_panel.createSequentialGroup()
+							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_panel.createSequentialGroup()
+									.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 114, Short.MAX_VALUE)
+									.addGap(247))
+								.addGroup(gl_panel.createSequentialGroup()
+									.addGap(112)
+									.addComponent(scrollPane2, GroupLayout.PREFERRED_SIZE, 249, GroupLayout.PREFERRED_SIZE)))
+							.addGap(5)
+							.addComponent(btnNewButton_2, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE)
+							.addGap(11)
+							.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, 104, GroupLayout.PREFERRED_SIZE)
+							.addContainerGap())))
+		);
+		
+		btnNewButton_5 = new JButton("Pearson graph");
+		btnNewButton_5.setFont(new Font("Tahoma", Font.BOLD, 12));
+		btnNewButton_5.setBounds(23, 70, 136, 23);
+		panel_2.add(btnNewButton_5);
+		btnNewButton_5.addActionListener(e -> new Chi_square_graph());
+
+		
+		JTextPane equationPane1 = new JTextPane();
+		equationPane1.setBounds(295, 22, 178, 30);
+		panel_1.add(equationPane1);
+		equationPane1.setFont(new Font("Tahoma", Font.BOLD, 12));
+		equationPane1.setContentType("text/html");
+		equationPane1.setText(
+		    "<html>"
+		    + "<div style='white-space:nowrap; font-size:12pt;'>"
+		    + "P(X&#772; - &sigma;<sub>exp</sub> &lt; X<sub>N+1</sub> &lt; X&#772; + &sigma;<sub>exp</sub>) ="
+		    + "</div>"
+		    + "</html>"
+		);
+		equationPane1.setEditable(false); // texte non modifiable
+		equationPane1.setForeground(Color.BLACK); // couleur du texte, modifiable si vous voulez
+		equationPane1.setBackground(new Color(192, 192, 192));
+
+
+
+		textField_5 = new JTextField();
+		textField_5.setBounds(480, 24, 89, 20);
+		panel_1.add(textField_5);
+		textField_5.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+		textField_5.setEditable(false);
+		textField_5.setColumns(10);
+		
+		JLabel lblNewLabel_8 = new JLabel("%");
+		lblNewLabel_8.setBounds(585, 27, 49, 14);
+		panel_1.add(lblNewLabel_8);
+		panel.setLayout(gl_panel);
+		contentPane.setLayout(gl_contentPane);
+		
+	}
+	
+	/* ==================================================
+	   CALCUL STATISTIQUE COMPLET
+	   ================================================== */
+	private void computeStatistics() {
+
+	    int rows = tableModel.getRowCount();
+	    int N = 0;
+	    double sum = 0.0;
+	    double sumSq = 0.0;
+
+	    for (int i = 0; i < rows; i++) {
+	        Object val = tableModel.getValueAt(i, 1); // colonne N
+	        if (val != null && !val.toString().trim().isEmpty()) {
+	            try {
+	                double x = Double.parseDouble(val.toString());
+	                N++;
+	                sum += x;
+	                sumSq += x * x;
+	            } catch (NumberFormatException ex) {
+	                // ignorer valeurs invalides
+	            }
+	        }
+	    }
+
+	    if (N == 0) {
+	        JOptionPane.showMessageDialog(this, "No valid N values found.");
+	        return;
+	    }
+
+	    double mean = sum / N;
+	    double sigmaTheo = Math.sqrt(mean);
+	    double sigmaExp = Math.sqrt((sumSq / N) - (mean * mean));
+
+	    textField_1.setText(String.valueOf(N));
+	    textField_2.setText(String.format("%.2f", mean));
+	    textField_3.setText(String.format("%.2f", sigmaTheo));
+	    textField_4.setText(String.format("%.2f", sigmaExp));
+	}
+//----------------------------------------------------------------------
+	private void buildIntervals() {
+	    double L;
+	    try {
+	        L = Double.parseDouble(textField.getText());
+	        if (L <= 0) throw new NumberFormatException();
+	    } catch (NumberFormatException e) {
+	        JOptionPane.showMessageDialog(this,
+	                "Invalid group width value.",
+	                "Error",
+	                JOptionPane.ERROR_MESSAGE);
+	        return;
+	    }
+
+	    Interval interval = new Interval(tableModel, tableModel2, L);
+	    interval.setTextField5(textField_5); // pour afficher P(N+1) en %
+	}
+}

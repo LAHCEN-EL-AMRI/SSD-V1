@@ -1,0 +1,151 @@
+import javax.swing.table.DefaultTableModel;
+import javax.swing.JTextField;
+import java.util.ArrayList;
+import java.util.Collections;
+
+public class Interval {
+
+    private DefaultTableModel sourceModel;   // table 1 (N)
+    private DefaultTableModel targetModel;   // table 2
+    private double L;                        // group width
+
+    public Interval(DefaultTableModel sourceModel,
+                    DefaultTableModel targetModel,
+                    double groupWidth) {
+
+        this.sourceModel = sourceModel;
+        this.targetModel = targetModel;
+        this.L = groupWidth;
+
+        buildAndCompute();
+    }
+
+    // Setter pour textField_5 afin d’afficher la probabilité
+    public void setTextField5(JTextField tf) {
+        Main.textField_5 = tf;
+    }
+
+    private void buildAndCompute() {
+
+        ArrayList<Double> values = new ArrayList<>();
+
+        /* ============================
+           Lecture des valeurs N
+           ============================ */
+        for (int i = 0; i < sourceModel.getRowCount(); i++) {
+            Object val = sourceModel.getValueAt(i, 1);
+            if (val != null && !val.toString().trim().isEmpty()) {
+                try {
+                    values.add(Double.parseDouble(val.toString()));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        if (values.isEmpty()) return;
+
+        Collections.sort(values);
+
+        int N = values.size();   // nombre total de valeurs
+        double sum = 0.0;
+        for (double v : values) sum += v;
+        double mean = sum / N;  // moyenne
+
+        /* ============================
+           Écart-type expérimental
+           ============================ */
+        double sumSq = 0.0;
+        for (double v : values) sumSq += v * v;
+        double sigmaExp = Math.sqrt((sumSq / N) - (mean * mean));
+
+        /* ============================
+           Construction de la table 2
+           ============================ */
+        double min = values.get(0);
+        double max = values.get(values.size() - 1);
+
+        // Nettoyage table 2
+        for (int i = 0; i < targetModel.getRowCount(); i++) {
+            for (int j = 0; j < targetModel.getColumnCount(); j++) {
+                targetModel.setValueAt("", i, j);
+            }
+        }
+
+        int row = 0;
+        int groupCount = 0;   // compteur de groupes
+        double a = min;
+        double chi2 = 0.0;
+
+        while (a < max && row < targetModel.getRowCount()) {
+
+            double b = a + L;
+
+            // Intervalle
+            String intervalTxt = String.format("[%.2f; %.2f[", a, b);
+
+            // Centre de classe Xi
+            double Xi = (a + b) / 2.0;
+
+            // ni : effectif observé
+            int ni = 0;
+            for (double v : values) {
+                if (v >= a && v < b) ni++;
+            }
+
+            // P(Xi) loi normale (Poisson approchée)
+            double Pxi = (1.0 / Math.sqrt(2 * Math.PI * mean))
+                    * Math.exp(-(Math.pow(Xi - mean, 2)) / (2 * mean));
+
+            // N · L · P(Xi)
+            double NlP = N * L * Pxi;
+
+            // Remplissage table
+            targetModel.setValueAt(intervalTxt, row, 0);
+            targetModel.setValueAt(String.format("%.2f", Xi), row, 1);
+            targetModel.setValueAt(ni, row, 2);
+            targetModel.setValueAt(String.format("%.6f", Pxi), row, 3);
+            targetModel.setValueAt(String.format("%.2f", NlP), row, 4);
+
+            // Calcul χ²
+            if (NlP > 0) {
+                chi2 += Math.pow(ni - NlP, 2) / NlP;
+            }
+
+            groupCount++;   // incrément du nombre réel de groupes
+            a = b;
+            row++;
+        }
+
+        /* ============================
+           Degrés de liberté : (k − 2)
+           ============================ */
+        if (Main.textField_7 != null) {
+            int dof = groupCount - 2;
+            if (dof < 0) dof = 0;
+            Main.textField_7.setText(String.valueOf(dof));
+        }
+
+        /* ============================
+           Probabilité pour N+1 (%)
+           ============================ */
+        if (Main.textField_5 != null) {
+
+            int count = 0;
+            double lower = mean - sigmaExp;
+            double upper = mean + sigmaExp;
+
+            for (double v : values) {
+                if (v >= lower && v <= upper) count++;
+            }
+
+            double probPercent = ((double) count / N) * 100.0;
+            Main.textField_5.setText(String.format("%.2f %%", probPercent));
+        }
+
+        /* ============================
+           Affichage χ²
+           ============================ */
+        if (Main.textField_6 != null) {
+            Main.textField_6.setText(String.format("%.2f", chi2));
+        }
+    }
+}

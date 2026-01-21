@@ -1,0 +1,307 @@
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.swing.*;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+
+import org.apache.pdfbox.pdmodel.*;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+
+import org.jfree.chart.JFreeChart;
+
+public class Export {
+
+    private Main main;
+    private float y;
+    private PDPageContentStream content;
+    private PDType0Font font;
+    private PDType0Font fontBold;
+
+    public Export(Main main) {
+        this.main = main;
+        exportPDF();
+    }
+
+    private void exportPDF() {
+        PDDocument document = null;
+        try {
+            document = new PDDocument();
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+
+            font = PDType0Font.load(document, new File("C:/Windows/Fonts/arial.ttf"));
+            fontBold = font;
+
+            content = new PDPageContentStream(document, page);
+            y = 770;
+
+            // HEADER
+            drawHeader(document);
+
+            // TITLE
+            y -= 20;
+            writeCenteredTitle("Report on the Statistical Study of the Detector");
+
+            // ADDITIONAL INFORMATIONS
+            writeSection("Additional informations");
+            writeInfosFromFile();
+
+            // OPERATING CONDITIONS
+            writeSection("OPERATING CONDITIONS");
+            writeLineColored("Group width (l)", main.textField.getText());
+
+            // STATISTICAL VALUES
+            writeSection("Statistical values");
+            writeLineColored("N", main.textField_1.getText());
+            writeLineColored("Mean (X̄)", main.textField_2.getText());
+            writeLineColored("σ_theoretical", main.textField_3.getText());
+            writeLineColored("σ_experimental", main.textField_4.getText());
+
+            // TEXTE MATHÉMATIQUE + VALEUR
+            writeEquationLine(
+                "P(X̄ - σ_exp < X(N+1) < X̄ + σ_exp) =",
+                main.textField_5.getText()
+            );
+
+         // ============================
+         // GRAPH -> IMAGE -> PDF (SANS AFFICHAGE)
+         // ============================
+
+         // Création du graphe SANS affichage
+         Graph graph = new Graph((DefaultTableModel) main.table.getModel());
+
+         // Taille réelle du graphe
+         int imgWidth  = 500;
+         int imgHeight = 350;
+
+         // Création image mémoire
+         BufferedImage chartImage =
+                 graph.getChart().createBufferedImage(imgWidth, imgHeight);
+
+         // Conversion BufferedImage -> PDImageXObject
+         PDImageXObject pdfImage =
+                 PDImageXObject.createFromByteArray(
+                         document,
+                         bufferedImageToPNG(chartImage),
+                         "graph"
+                 );
+
+         // Vérifier l’espace restant
+         if (y < imgHeight + 50) {
+             content.close();
+             page = new PDPage(PDRectangle.A4);
+             document.addPage(page);
+             content = new PDPageContentStream(document, page);
+             y = 770;
+         }
+
+         // Dessiner image centrée
+         float xImage = (PDRectangle.A4.getWidth() - imgWidth) / 2;
+         content.drawImage(pdfImage, xImage, y - imgHeight, imgWidth, imgHeight);
+
+         y -= imgHeight + 25;
+
+
+            // PEARSON CHI-SQUARE TEST
+            writeSection("Pearson chi-square test");
+            writeLineColored("χ²", main.textField_6.getText());
+            writeLineColored("Degrees of freedom (L)", main.textField_7.getText());
+            writeLineColored("Probability P", main.textField_8.getText());
+
+            // TABLEAU MESURÉ
+            writeSection("Measured data");
+            writeTable(main.table);
+
+            content.close();
+
+            // Sauvegarde PDF
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            File defaultDir = new File("pdf_Export");
+            if (!defaultDir.exists()) defaultDir.mkdirs();
+
+            String defaultFileName = "report_" + sdf.format(new Date()) + ".pdf";
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(defaultDir);
+            fileChooser.setSelectedFile(new File(defaultDir, defaultFileName));
+
+            if (fileChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                document.save(selectedFile);
+                JOptionPane.showMessageDialog(null, "PDF saved at:\n" + selectedFile.getAbsolutePath());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error creating PDF:\n" + e.getMessage());
+        } finally {
+            try {
+                if (document != null) document.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // =========================
+    // HEADER
+    // =========================
+    private void drawHeader(PDDocument document) throws IOException {
+        try {
+            PDImageXObject logo = PDImageXObject.createFromFile("icons/image.PNG", document);
+            content.drawImage(logo, 450, 750, 100, 50);
+        } catch (Exception e) {
+            System.out.println("Logo not found");
+        }
+
+        writeLineAt("SSD", 50, 770, fontBold, 14);
+        writeLineAt("Version : 1.0", 50, 755, font, 9);
+        writeLineAt("Lien : https://github.com/LAHCEN-EL-AMRI", 50, 740, font, 9);
+        writeLineAt("G_mail: lahssenelamri@gmail.com", 50, 725, font, 9);
+
+        SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yy");
+        SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss");
+        writeLineAtColor("Printed on: " + sdfDate.format(new Date()), 420, 755, font, 9, Color.RED);
+        writeLineAtColor("Time: " + sdfTime.format(new Date()), 420, 740, font, 9, Color.RED);
+
+        content.setStrokingColor(Color.BLACK);
+        content.setLineWidth(1);
+        content.moveTo(50, 710);
+        content.lineTo(550, 710);
+        content.stroke();
+
+        y = 695;
+    }
+
+    private void writeCenteredTitle(String text) throws IOException {
+        content.beginText();
+        content.setFont(fontBold, 16);
+        float titleWidth = fontBold.getStringWidth(text) / 1000 * 16;
+        float xPosition = (PDRectangle.A4.getWidth() - titleWidth) / 2;
+        content.newLineAtOffset(xPosition, y);
+        content.showText(text);
+        content.endText();
+
+        y -= 15;
+        content.setStrokingColor(Color.BLACK);
+        content.setLineWidth(1);
+        content.moveTo(50, y);
+        content.lineTo(550, y);
+        content.stroke();
+        y -= 20;
+    }
+
+    private void writeSection(String text) throws IOException {
+        y -= 10;
+        content.beginText();
+        content.setFont(fontBold, 14);
+        content.newLineAtOffset(50, y);
+        content.showText(text);
+        content.endText();
+        y -= 15;
+    }
+
+    private void writeLineColored(String key, String value) throws IOException {
+        content.beginText();
+        content.setFont(font, 10);
+        content.newLineAtOffset(60, y);
+        content.showText(key + ": ");
+        content.endText();
+
+        float textWidth = font.getStringWidth(key + ": ") / 1000 * 10;
+        content.beginText();
+        content.setNonStrokingColor(Color.BLUE);
+        content.setFont(font, 10);
+        content.newLineAtOffset(60 + textWidth, y);
+        content.showText(value);
+        content.endText();
+
+        content.setNonStrokingColor(Color.BLACK);
+        y -= 14;
+    }
+
+    private void writeEquationLine(String equationText, String value) throws IOException {
+        content.beginText();
+        content.setFont(font, 10);
+        content.newLineAtOffset(60, y);
+        content.showText(equationText);
+        content.endText();
+
+        float textWidth = font.getStringWidth(equationText) / 1000 * 10;
+        content.beginText();
+        content.setNonStrokingColor(Color.BLUE);
+        content.setFont(font, 10);
+        content.newLineAtOffset(60 + textWidth, y);
+        content.showText(value);
+        content.endText();
+
+        content.setNonStrokingColor(Color.BLACK);
+        y -= 14;
+    }
+
+    private void writeLineAt(String text, float x, float yPos, PDType0Font fontUsed, int fontSize) throws IOException {
+        content.beginText();
+        content.setFont(fontUsed, fontSize);
+        content.newLineAtOffset(x, yPos);
+        content.showText(text);
+        content.endText();
+    }
+
+    private void writeLineAtColor(String text, float x, float yPos, PDType0Font fontUsed, int fontSize, Color color) throws IOException {
+        content.setNonStrokingColor(color);
+        content.beginText();
+        content.setFont(fontUsed, fontSize);
+        content.newLineAtOffset(x, yPos);
+        content.showText(text);
+        content.endText();
+        content.setNonStrokingColor(Color.BLACK);
+    }
+
+    private void writeInfosFromFile() throws IOException {
+        File file = new File("Data/dat.dat");
+        if (!file.exists()) {
+            writeLineColored("Info", "No additional information file found.");
+            return;
+        }
+
+        String[] labels = {
+            "User Name", "Laboratory", "Detector Type", "Source",
+            "Activity", "Production Date", "Applied Voltage", "Counting Time",
+            "Repetitions", "Dead Time", "Saturation", "Other informations"
+        };
+
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String line;
+        int i = 0;
+
+        while ((line = br.readLine()) != null && i < labels.length) {
+            writeLineColored(labels[i], line);
+            i++;
+        }
+        br.close();
+    }
+
+    private void writeTable(JTable table) throws IOException {
+        for (int row = 0; row < table.getRowCount(); row++) {
+            StringBuilder line = new StringBuilder();
+            for (int col = 0; col < table.getColumnCount(); col++) {
+                Object val = table.getValueAt(row, col);
+                line.append(val == null ? "" : val.toString()).append("   ");
+            }
+            writeLineColored("", line.toString());
+        }
+    }
+    
+    private byte[] bufferedImageToPNG(BufferedImage image) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", baos);
+        return baos.toByteArray();
+    }
+
+}

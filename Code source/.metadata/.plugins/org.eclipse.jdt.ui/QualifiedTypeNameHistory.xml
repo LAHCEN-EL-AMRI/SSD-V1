@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="javax.swing.JTextPane"/>
+    <fullyQualifiedTypeName name="javax.swing.border.LineBorder"/>
+    <fullyQualifiedTypeName name="javax.swing.JOptionPane"/>
+    <fullyQualifiedTypeName name="javax.swing.BorderFactory"/>
+    <fullyQualifiedTypeName name="org.apache.pdfbox.pdmodel.font.Standard14Fonts"/>
+    <fullyQualifiedTypeName name="org.jfree.chart.ChartPanel"/>
+    <fullyQualifiedTypeName name="org.jfree.chart.plot.DatasetRenderingOrder"/>
+    <fullyQualifiedTypeName name="javax.imageio.ImageIO"/>
+    <fullyQualifiedTypeName name="org.jfree.chart.JFreeChart"/>
+    <fullyQualifiedTypeName name="org.jfree.chart.plot.XYPlot"/>
+    <fullyQualifiedTypeName name="org.jfree.chart.ChartFactory"/>
+    <fullyQualifiedTypeName name="org.jfree.data.xy.XYSeries"/>
+    <fullyQualifiedTypeName name="org.jfree.chart.renderer.xy.XYLineAndShapeRenderer"/>
+    <fullyQualifiedTypeName name="org.jfree.data.xy.XYSeriesCollection"/>
+    <fullyQualifiedTypeName name="javax.swing.table.DefaultTableModel"/>
+    <fullyQualifiedTypeName name="java.util.ArrayList"/>
+</qualifiedTypeNameHistroy>

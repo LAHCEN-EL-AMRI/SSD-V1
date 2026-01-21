@@ -1,0 +1,786 @@
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+
+import org.apache.pdfbox.pdmodel.*;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+
+public class Export {
+
+    private Main main;
+    private float y;
+    private PDPageContentStream content;
+    private PDType0Font font;
+    private PDType0Font fontBold;
+
+    private static final float MARGIN = 50;
+    private static final float BOTTOM_MARGIN = 60;
+
+    public Export(Main main) {
+        this.main = main;
+        exportPDF();
+    }
+
+    private void exportPDF() {
+        PDDocument document = null;
+        try {
+            document = new PDDocument();
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+
+            font = PDType0Font.load(document, new File("C:/Windows/Fonts/arial.ttf"));
+            fontBold = font;
+
+            content = new PDPageContentStream(document, page);
+            y = PDRectangle.A4.getHeight() - MARGIN;
+
+            drawHeader(document);
+            writeCenteredTitle("Report on the Statistical Study of the Detector");
+
+            writeSection("Additional informations");
+            writeInfosFromFile();
+
+            writeSection("Operating conditions");
+            writeLineColored("Group width (l)", main.textField.getText());
+       
+         // Ajouter le tableau de mesures depuis le JTable de l'interface
+         writeSection("Measurement table");
+         JTable measurementTable = createMeasurementTableFromJTable();
+         writeTableWithLinesPaginated(measurementTable, document);
+
+
+            writeSection("Statistical values");
+            writeLineColored("N", main.textField_1.getText());
+            writeLineColored("Mean (X̄)", main.textField_2.getText());
+            writeLineColored("σ_theoretical", main.textField_3.getText());
+            writeLineColored("σ_experimental", main.textField_4.getText());
+
+            writeEquationLine(
+                "P(X̄ - σ_exp < X(N+1) < X̄ + σ_exp) = ",
+                main.textField_5.getText()
+            );
+
+            writeSection("Comment on the results:");
+            
+            content.beginText();
+            content.setFont(font, 12);
+            content.newLineAtOffset(MARGIN + 10, y);
+            content.setNonStrokingColor(Color.RED);  // <-- texte en rouge
+            content.showText(main.lblNewLabel_14.getText());
+            content.endText();
+            content.setNonStrokingColor(Color.BLACK); // <-- remet noir pour la suite
+            y -= 14;
+
+            // =====================================================
+            // SECOND TABLE (avant le graphe)
+            // =====================================================
+            writeSection("Statistical distribution table");
+            writeTableWithLinesPaginated(main.table2, document);
+
+
+            // =====================================================
+            // GRAPHE (rendu direct du JFreeChart – fiable)
+            // =====================================================
+            writeSection("Statistical distribution Graph");
+            try {
+                Graph graph = new Graph(main.tableModel2, false);
+                BufferedImage graphImg = renderChart(graph.getChart(), 1050, 500);
+
+                if (y - 230 < BOTTOM_MARGIN) {
+                    content.close();
+                    content = createNewPage(document);
+                    y = PDRectangle.A4.getHeight() - MARGIN;
+                }
+
+                PDImageXObject graphPDF = PDImageXObject.createFromByteArray(
+                    document,
+                    bufferedImageToPNG(graphImg),
+                    "graph"
+                );
+
+                content.drawImage(
+                    graphPDF,
+                    MARGIN,
+                    y - 230,
+                    PDRectangle.A4.getWidth() - 2 * MARGIN,
+                    230
+                );
+
+                y -= 250;
+                graph.dispose();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            // =====================================================
+            // PEARSON
+            // =====================================================
+            writeSection("Pearson chi-square test");
+            writeLineColored("χ²", main.textField_6.getText());
+            writeLineColored("Degrees of freedom (L)", main.textField_7.getText());
+            writeLineColored("Probability P", main.textField_8.getText());
+
+         // =====================================================
+         // CHI-SQUARE GRAPH
+         // =====================================================
+         writeSection("Chi-Square Critical Values Graph");
+         try {
+             // Création du chart Chi-square
+             JFreeChart chiChart = createChiSquareChart();
+
+             BufferedImage chiImg = renderChart(chiChart, 1050, 500);
+
+             if (y - 230 < BOTTOM_MARGIN) {
+                 content.close();
+                 content = createNewPage(document);
+                 y = PDRectangle.A4.getHeight() - MARGIN;
+             }
+
+             PDImageXObject chiPDF = PDImageXObject.createFromByteArray(
+                 document,
+                 bufferedImageToPNG(chiImg),
+                 "chi_square_graph"
+             );
+
+             content.drawImage(
+                 chiPDF,
+                 MARGIN,
+                 y - 230,
+                 PDRectangle.A4.getWidth() - 2 * MARGIN,
+                 230
+             );
+
+             y -= 250;
+
+         } catch (Exception ex) {
+             ex.printStackTrace();
+         }
+
+      // =====================================================
+      // COMMENTAIRE CHI-SQUARE
+      // =====================================================
+      writeSection("Comment on the Chi-Square Graph:");
+      content.beginText();
+      content.setFont(font, 12);
+      content.newLineAtOffset(MARGIN + 10, y);
+      content.setNonStrokingColor(Color.RED);  // <-- texte en rouge
+      content.showText(main.lblNewLabel_7.getText());
+      content.endText();
+      content.setNonStrokingColor(Color.BLACK); // <-- remet noir pour le reste
+      y -= 14;
+            
+            
+            
+   // =====================================================
+   // TABLEAU CHI-SQUARE
+   // =====================================================
+   writeSection("Chi-Square Critical Values Table");
+
+   // Création du JTable temporaire avec tes données
+   String[] chiColumns = {"df", "0.995", "0.975", "0.95", "0.90", "0.10", "0.05", "0.025", "0.01", "0.005"};
+
+   Object[][] chiData = {
+       {1, 0.000, 0.000, 0.004, 0.016, 2.706, 3.841, 5.024, 6.635, 7.879},
+       {2, 0.010, 0.051, 0.103, 0.211, 4.605, 5.991, 7.378, 9.210, 10.597},
+       {3, 0.072, 0.216, 0.352, 0.584, 6.251, 7.815, 9.348, 11.345, 12.838},
+       {4, 0.207, 0.484, 0.711, 1.064, 7.779, 9.488, 11.143, 13.277, 14.860},
+       {5, 0.412, 0.831, 1.145, 1.610, 9.236, 11.070, 12.833, 15.086, 16.750},
+       {6, 0.676, 1.237, 1.635, 2.204, 10.645, 12.592, 14.449, 16.812, 18.548},
+       {7, 0.989, 1.690, 2.167, 2.833, 12.017, 14.067, 16.013, 18.475, 20.278},
+       {8, 1.344, 2.180, 2.733, 3.490, 13.362, 15.507, 17.535, 20.090, 21.955},
+       {9, 1.735, 2.700, 3.325, 4.168, 14.684, 16.919, 19.023, 21.666, 23.589},
+       {10, 2.156, 3.247, 3.940, 4.865, 15.987, 18.307, 20.483, 23.209, 25.188},
+       {11, 2.603, 3.816, 4.575, 5.578, 17.275, 19.675, 21.920, 24.725, 26.757},
+       {12, 3.074, 4.404, 5.226, 6.304, 18.549, 21.026, 23.337, 26.217, 28.299},
+       {13, 3.565, 5.009, 5.892, 7.042, 19.812, 22.362, 24.736, 27.688, 29.819},
+       {14, 4.075, 5.629, 6.571, 7.790, 21.064, 23.685, 26.119, 29.141, 31.319},
+       {15, 4.601, 6.262, 7.261, 8.547, 22.307, 25.000, 27.488, 30.578, 32.801},
+       {16, 5.142, 6.908, 7.962, 9.312, 23.542, 26.296, 28.845, 31.999, 34.267},
+       {17, 5.697, 7.564, 8.672, 10.110, 24.769, 27.587, 30.191, 33.409, 35.718},
+       {18, 6.265, 8.231, 9.390, 10.868, 25.989, 28.869, 31.526, 34.805, 37.156},
+       {19, 6.844, 8.907, 10.117, 11.651, 27.204, 30.144, 32.852, 36.191, 38.582},
+       {20, 7.434, 9.591, 10.851, 12.443, 28.412, 31.410, 34.170, 37.566, 40.000}
+   };
+
+   JTable chiTable = new JTable(new DefaultTableModel(chiData, chiColumns));
+   chiTable.setRowHeight(16);
+
+   // Appeler la méthode existante pour dessiner le tableau dans le PDF
+   writeTableWithLinesPaginated(document, chiTable);
+
+           // Ajouter la section Validation à la fin
+           writeValidationSection();
+
+           
+
+            content.close();
+            savePDF(document);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "PDF error:\n" + e.getMessage());
+        } finally {
+            try {
+                if (document != null) document.close();
+            } catch (IOException ignored) {}
+        }
+    }
+
+    // ==========================
+    // TABLEAU AVEC LIGNES
+    // ==========================
+    private void writeTableWithLinesPaginated(JTable table, PDDocument document) throws IOException {
+        if (table.getRowCount() == 0) return;
+
+        float tableX = MARGIN;
+        float tableWidth = PDRectangle.A4.getWidth() - 2 * MARGIN;
+        float rowHeight = 16;
+        int cols = table.getColumnCount();
+        float colWidth = tableWidth / cols;
+
+        float currentY = y;
+        boolean drawHeader = true;
+
+        for (int r = 0; r < table.getRowCount(); r++) {
+
+            // Pagination si nécessaire
+            if (currentY < BOTTOM_MARGIN + rowHeight) {
+                content.close();
+                content = createNewPage(document);
+                currentY = PDRectangle.A4.getHeight() - MARGIN;
+                drawHeader = true;
+            }
+
+            // Dessiner l'entête sur chaque nouvelle page
+            if (drawHeader) {
+                // fond gris
+                content.setNonStrokingColor(Color.LIGHT_GRAY);
+                content.addRect(tableX, currentY - rowHeight, tableWidth, rowHeight);
+                content.fill();
+
+                // Texte des colonnes
+                content.setNonStrokingColor(Color.BLACK);
+                for (int c = 0; c < cols; c++) {
+                    String text = table.getColumnName(c);
+                    float textX = tableX + c * colWidth + 2;
+                    float textY = currentY - rowHeight + 4;
+                    content.beginText();
+                    content.setFont(fontBold, 10);
+                    content.newLineAtOffset(textX, textY);
+                    content.showText(text);
+                    content.endText();
+                }
+
+                // Lignes verticales du header
+                content.setStrokingColor(Color.BLACK);
+                for (int c = 0; c <= cols; c++) {
+                    float x = tableX + c * colWidth;
+                    content.moveTo(x, currentY);
+                    content.lineTo(x, currentY - rowHeight);
+                    content.stroke();
+                }
+                // Ligne horizontale du bas du header
+                content.moveTo(tableX, currentY - rowHeight);
+                content.lineTo(tableX + tableWidth, currentY - rowHeight);
+                content.stroke();
+
+                currentY -= rowHeight;
+                drawHeader = false;
+            }
+
+            // Couleur alternée des lignes
+            if (r % 2 == 0) {
+                content.setNonStrokingColor(new Color(230, 230, 230));
+                content.addRect(tableX, currentY - rowHeight, tableWidth, rowHeight);
+                content.fill();
+                content.setNonStrokingColor(Color.BLACK);
+            }
+
+            // Texte des cellules
+            for (int c = 0; c < cols; c++) {
+                Object val = table.getValueAt(r, c);
+                String text = val == null ? "" : val.toString();
+                float textX = tableX + c * colWidth + 2;
+                float textY = currentY - rowHeight + 4;
+                content.beginText();
+                content.setFont(font, 10);
+                content.newLineAtOffset(textX, textY);
+                content.showText(text);
+                content.endText();
+            }
+
+            // Lignes verticales
+            for (int c = 0; c <= cols; c++) {
+                float x = tableX + c * colWidth;
+                content.moveTo(x, currentY);
+                content.lineTo(x, currentY - rowHeight);
+                content.stroke();
+            }
+            // Ligne horizontale
+            content.moveTo(tableX, currentY - rowHeight);
+            content.lineTo(tableX + tableWidth, currentY - rowHeight);
+            content.stroke();
+
+            currentY -= rowHeight;
+        }
+
+        y = currentY - 10; // mettre à jour y pour le contenu suivant
+    }
+
+
+
+    // ==========================
+    // AUTRES MÉTHODES (inchangées)
+    // ==========================
+    private BufferedImage capturePanel(JPanel panel) {
+        int w = panel.getWidth();
+        int h = panel.getHeight();
+        if (w <= 0 || h <= 0) {
+            w = 1050;
+            h = 1000;
+            panel.setSize(w, h);
+            panel.doLayout();
+        }
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = img.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        panel.printAll(g2);
+        g2.dispose();
+        return img;
+    }
+
+    private void drawHeader(PDDocument document) throws IOException {
+        try {
+            PDImageXObject logo = PDImageXObject.createFromFile("icons/logo.jpg", document);
+            content.drawImage(logo, 450, 750, 100, 50);
+        } catch (Exception ignored) {}
+
+        writeLineAt("SSD", 50, 770, fontBold, 14);
+        writeLineAt("Version : 1.0", 50, 755, font, 9);
+        writeLineAt("Link : https://github.com/LAHCEN-EL-AMRI", 50, 740, font, 9);
+        writeLineAt("G_mail : lahssenelamri@gmail.com", 50, 725, font, 9);
+
+        SimpleDateFormat d = new SimpleDateFormat("dd/MM/yy");
+        SimpleDateFormat t = new SimpleDateFormat("HH:mm:ss");
+        writeLineAtColor("Printed on: " + d.format(new Date()), 420, 735, font, 9, Color.RED);
+        writeLineAtColor("Time: " + t.format(new Date()), 420, 720, font, 9, Color.RED);
+
+        content.setStrokingColor(Color.BLACK);
+        content.moveTo(50, 710);
+        content.lineTo(550, 710);
+        content.stroke();
+
+        y = 690;
+    }
+
+    private void writeCenteredTitle(String text) throws IOException {
+        content.beginText();
+        content.setFont(fontBold, 16);
+        float w = fontBold.getStringWidth(text) / 1000 * 16;
+        content.newLineAtOffset((PDRectangle.A4.getWidth() - w) / 2, y);
+        content.showText(text);
+        content.endText();
+        y -= 25;
+    }
+
+    private void writeSection(String text) throws IOException {
+        y -= 10;
+        content.beginText();
+        content.setFont(fontBold, 14);
+        content.newLineAtOffset(MARGIN, y);
+        content.showText(text);
+        content.endText();
+        y -= 15;
+    }
+
+    private void writeLineColored(String key, String value) throws IOException {
+        content.beginText();
+        content.setFont(font, 10);
+        content.newLineAtOffset(MARGIN + 10, y);
+        content.showText(key + ": ");
+        content.endText();
+
+        float w = font.getStringWidth(key + ": ") / 1000 * 10;
+
+        content.beginText();
+        content.setFont(font, 10);
+        content.setNonStrokingColor(Color.BLUE);
+        content.newLineAtOffset(MARGIN + 10 + w, y);
+        content.showText(value);
+        content.endText();
+
+        content.setNonStrokingColor(Color.BLACK);
+        y -= 14;
+    }
+
+    private void writeEquationLine(String eq, String value) throws IOException {
+        writeLineColored(eq, value);
+    }
+
+    private void writeLineAt(String text, float x, float y, PDType0Font f, int size) throws IOException {
+        content.beginText();
+        content.setFont(f, size);
+        content.newLineAtOffset(x, y);
+        content.showText(text);
+        content.endText();
+    }
+
+    private void writeLineAtColor(String text, float x, float y, PDType0Font f, int size, Color c) throws IOException {
+        content.setNonStrokingColor(c);
+        writeLineAt(text, x, y, f, size);
+        content.setNonStrokingColor(Color.BLACK);
+    }
+
+    private void writeInfosFromFile() throws IOException {
+        File f = new File("Data/dat.dat");
+        if (!f.exists()) {
+            writeLineColored("Info", "No data file found");
+            return;
+        }
+
+        BufferedReader br = new BufferedReader(new FileReader(f));
+        String line;
+        int i = 0;
+        String[] labels = {
+            "User Name", "Laboratory", "Detector Type", "Source",
+            "Activity", "Production Date", "Applied Voltage",
+            "Counting Time", "Repetitions", "Dead Time",
+            "Saturation", "Other informations"
+        };
+        while ((line = br.readLine()) != null && i < labels.length) {
+            writeLineColored(labels[i++], line);
+        }
+        br.close();
+    }
+
+    private void savePDF(PDDocument document) throws IOException {
+        File dir = new File("pdf_Export");
+        if (!dir.exists()) dir.mkdirs();
+
+        String name = "report_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".pdf";
+        JFileChooser chooser = new JFileChooser(dir);
+        chooser.setSelectedFile(new File(dir, name));
+
+        if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            document.save(chooser.getSelectedFile());
+            JOptionPane.showMessageDialog(null,
+                    "PDF saved:\n" + chooser.getSelectedFile().getAbsolutePath());
+        }
+    }
+
+    private byte[] bufferedImageToPNG(BufferedImage img) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(img, "png", baos);
+        return baos.toByteArray();
+    }
+
+    private PDPageContentStream createNewPage(PDDocument doc) throws IOException {
+        PDPage page = new PDPage(PDRectangle.A4);
+        doc.addPage(page);
+        return new PDPageContentStream(doc, page);
+    }
+
+    private BufferedImage renderChart(JFreeChart chart, int w, int h) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = img.createGraphics();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        g2.setColor(Color.WHITE);
+        g2.fillRect(0, 0, w, h);
+
+        chart.draw(g2, new java.awt.Rectangle(0, 0, w, h));
+        g2.dispose();
+
+        return img;
+    }
+    
+    
+    private JFreeChart createChiSquareChart() {
+        // Tableau des valeurs critiques χ²
+        double[][] chiValues = {
+            {0.000, 0.000, 0.004, 0.016, 2.706, 3.841, 5.024, 6.635, 7.879},
+            {0.010, 0.051, 0.103, 0.211, 4.605, 5.991, 7.378, 9.210, 10.597},
+            {0.072, 0.216, 0.352, 0.584, 6.251, 7.815, 9.348, 11.345, 12.838},
+            {0.207, 0.484, 0.711, 1.064, 7.779, 9.488, 11.143, 13.277, 14.860},
+            {0.412, 0.831, 1.145, 1.610, 9.236, 11.070, 12.833, 15.086, 16.750},
+            {0.676, 1.237, 1.635, 2.204, 10.645, 12.592, 14.449, 16.812, 18.548},
+            {0.989, 1.690, 2.167, 2.833, 12.017, 14.067, 16.013, 18.475, 20.278},
+            {1.344, 2.180, 2.733, 3.490, 13.362, 15.507, 17.535, 20.090, 21.955},
+            {1.735, 2.700, 3.325, 4.168, 14.684, 16.919, 19.023, 21.666, 23.589},
+            {2.156, 3.247, 3.940, 4.865, 15.987, 18.307, 20.483, 23.209, 25.188},
+            {2.603, 3.816, 4.575, 5.578, 17.275, 19.675, 21.920, 24.725, 26.757},
+            {3.074, 4.404, 5.226, 6.304, 18.549, 21.026, 23.337, 26.217, 28.299},
+            {3.565, 5.009, 5.892, 7.042, 19.812, 22.362, 24.736, 27.688, 29.819},
+            {4.075, 5.629, 6.571, 7.790, 21.064, 23.685, 26.119, 29.141, 31.319},
+            {4.601, 6.262, 7.261, 8.547, 22.307, 25.000, 27.488, 30.578, 32.801},
+            {5.142, 6.908, 7.962, 9.312, 23.542, 26.296, 28.845, 31.999, 34.267},
+            {5.697, 7.564, 8.672, 10.110, 24.769, 27.587, 30.191, 33.409, 35.718},
+            {6.265, 8.231, 9.390, 10.868, 25.989, 28.869, 31.526, 34.805, 37.156},
+            {6.844, 8.907, 10.117, 11.651, 27.204, 30.144, 32.852, 36.191, 38.582},
+            {7.434, 9.591, 10.851, 12.443, 28.412, 31.410, 34.170, 37.566, 40.000}
+        };
+        String[] confidenceLevels = {"0.995","0.975","0.95","0.90","0.10","0.05","0.025","0.01","0.005"};
+
+        XYSeriesCollection dataset = new XYSeriesCollection();
+        for(int col=0; col<chiValues[0].length; col++){
+            XYSeries series = new XYSeries(confidenceLevels[col]);
+            for(int row=0; row<chiValues.length; row++){
+                series.add(chiValues[row][col], row+1);
+            }
+            dataset.addSeries(series);
+        }
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+            "Chi-Square Critical Values",
+            "Chi-Square",
+            "Degrees of Freedom (df)",
+            dataset,
+            org.jfree.chart.plot.PlotOrientation.VERTICAL,
+            true, true, false
+        );
+
+        XYPlot plot = chart.getXYPlot();
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
+        plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
+
+        // Ajouter le point du détecteur
+        try {
+            double chi2Value = Double.parseDouble(main.textField_6.getText().trim().replace(",", "."));
+            double dfValue   = Double.parseDouble(main.textField_7.getText().trim().replace(",", "."));
+
+            XYSeries detectorPoint = new XYSeries("Studied detector");
+            detectorPoint.add(chi2Value, dfValue);
+            XYSeriesCollection detectorDataset = new XYSeriesCollection();
+            detectorDataset.addSeries(detectorPoint);
+
+            XYLineAndShapeRenderer pointRenderer = new XYLineAndShapeRenderer(false, true);
+            pointRenderer.setSeriesPaint(0, Color.BLACK);
+            pointRenderer.setSeriesShape(0, new java.awt.geom.Ellipse2D.Double(-5, -5, 10, 10));
+
+            plot.setDataset(1, detectorDataset);
+            plot.setRenderer(1, pointRenderer);
+        } catch (Exception ignored) {}
+
+        return chart;
+    }
+    
+ // ==========================
+ // MÉTHODE COMPLÈTE EXPORT PDF
+ // ==========================
+    private void writeTableWithLinesPaginated(PDDocument document, JTable table) throws IOException {
+        if (table.getRowCount() == 0) return;
+
+        float tableX = MARGIN;
+        float rowHeight = 16;
+        float tableWidth = PDRectangle.A4.getWidth() - 2 * MARGIN;
+        int cols = table.getColumnCount();
+        float colWidth = tableWidth / cols;
+
+        int startRow = 0;
+
+        while (startRow < table.getRowCount()) {
+
+            // Nouvelle page si nécessaire
+            if (y - rowHeight < BOTTOM_MARGIN) {
+                content.close();
+                content = createNewPage(document);
+                y = PDRectangle.A4.getHeight() - MARGIN;
+            }
+
+            // ======================
+            // Header du tableau
+            // ======================
+            content.setNonStrokingColor(Color.LIGHT_GRAY);
+            content.addRect(tableX, y - rowHeight, tableWidth, rowHeight);
+            content.fill();
+
+            content.setNonStrokingColor(Color.BLACK);
+            for (int c = 0; c < cols; c++) {
+                String text = table.getColumnName(c);
+                float textX = tableX + c * colWidth + 2;
+                float textY = y - rowHeight + 4;
+                content.beginText();
+                content.setFont(fontBold, 10);
+                content.newLineAtOffset(textX, textY);
+                content.showText(text);
+                content.endText();
+            }
+
+            // Lignes verticales du header
+            content.setStrokingColor(Color.BLACK);
+            for (int c = 0; c <= cols; c++) {
+                float x = tableX + c * colWidth;
+                content.moveTo(x, y);
+                content.lineTo(x, y - rowHeight);
+                content.stroke();
+            }
+            // Ligne horizontale du bas du header
+            content.moveTo(tableX, y - rowHeight);
+            content.lineTo(tableX + tableWidth, y - rowHeight);
+            content.stroke();
+
+            // ======================
+            // Lignes du tableau
+            // ======================
+            float currentY = y - rowHeight;
+            while (startRow < table.getRowCount()) {
+                if (currentY - rowHeight < BOTTOM_MARGIN) {
+                    break; // Passe à la page suivante
+                }
+
+                // Alternance des couleurs
+                if (startRow % 2 == 0) {
+                    content.setNonStrokingColor(new Color(230, 230, 230));
+                    content.addRect(tableX, currentY - rowHeight, tableWidth, rowHeight);
+                    content.fill();
+                    content.setNonStrokingColor(Color.BLACK);
+                }
+
+                // Texte des cellules
+                for (int c = 0; c < cols; c++) {
+                    Object val = table.getValueAt(startRow, c);
+                    String text = val == null ? "" : val.toString();
+                    float textX = tableX + c * colWidth + 2;
+                    float textY = currentY - rowHeight + 4;
+                    content.beginText();
+                    content.setFont(font, 10);
+                    content.newLineAtOffset(textX, textY);
+                    content.showText(text);
+                    content.endText();
+                }
+
+                // Lignes verticales
+                for (int c = 0; c <= cols; c++) {
+                    float x = tableX + c * colWidth;
+                    content.moveTo(x, currentY);
+                    content.lineTo(x, currentY - rowHeight);
+                    content.stroke();
+                }
+                // Ligne horizontale
+                content.moveTo(tableX, currentY - rowHeight);
+                content.lineTo(tableX + tableWidth, currentY - rowHeight);
+                content.stroke();
+
+                currentY -= rowHeight;
+                startRow++;
+            }
+
+            y = currentY - 10; // mise à jour de l'attribut y global
+        }
+    }
+
+    private void writeValidationSection() throws IOException {
+        // Dessiner une ligne horizontale
+        content.setStrokingColor(Color.BLUE);  // couleur de la ligne
+        content.moveTo(MARGIN, y);
+        content.lineTo(PDRectangle.A4.getWidth() - MARGIN, y);
+        content.stroke();
+        y -= 20;
+
+        // Titre
+        content.beginText();
+        content.setFont(fontBold, 12);
+        content.newLineAtOffset(MARGIN, y);
+        content.showText("Validation");
+        content.endText();
+        y -= 30;
+
+        // Labels Operator / Validated by
+        float columnGap = 300; // écart entre deux colonnes
+        content.setFont(font, 10);
+
+        // Ligne 1 : Operator / Validated by
+        content.beginText();
+        content.newLineAtOffset(MARGIN, y);
+        content.showText("Operator :");
+        content.endText();
+
+        content.beginText();
+        content.newLineAtOffset(MARGIN + columnGap, y);
+        content.showText("Validated by:");
+        content.endText();
+        y -= 30;
+
+        // Ligne 2 : Signature / Signature
+        content.beginText();
+        content.newLineAtOffset(MARGIN, y);
+        content.showText("Signature :");
+        content.endText();
+
+        content.beginText();
+        content.newLineAtOffset(MARGIN + columnGap, y);
+        content.showText("Signature :");
+        content.endText();
+        y -= 50; // laisser un peu d’espace
+    }
+
+    private JTable createMeasurementTableFromJTable() {
+        if (main.table.getRowCount() == 0) return new JTable();
+
+        ArrayList<Double> valuesN = new ArrayList<>();
+        // Lecture de la deuxième colonne (index 1) de main.table
+        for (int r = 0; r < main.table.getRowCount(); r++) {
+            Object val = main.table.getValueAt(r, 1); // colonne N
+            if (val != null) {
+                try {
+                    double d = Double.parseDouble(val.toString().replace(",", "."));
+                    valuesN.add(d);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        if (valuesN.isEmpty()) return new JTable();
+
+        // Déterminer le nombre de colonnes : max 10 par ligne
+        int cols = 10;
+        int rows = (int) Math.ceil(valuesN.size() / (double) cols);
+
+        Object[][] data = new Object[rows][cols];
+        int index = 0;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (index < valuesN.size()) {
+                    data[r][c] = valuesN.get(index++);
+                } else {
+                    data[r][c] = ""; // cellule vide
+                }
+            }
+        }
+
+        // Noms de colonnes dynamiques
+        String[] columnNames = new String[cols];
+        for (int i = 0; i < cols; i++) columnNames[i] = "N" + (i+1);
+
+        JTable table = new JTable(data, columnNames);
+        table.setRowHeight(16);
+        return table;
+    }
+
+    
+}

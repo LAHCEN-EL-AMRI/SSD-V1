@@ -1,0 +1,114 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class Infos extends JFrame {
+
+    private static final long serialVersionUID = 1L;
+
+    public Infos() {
+        setTitle("Additional Information");
+        setSize(600, 500);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLayout(null);
+
+        // =========================
+        // Labels and TextFields
+        // =========================
+
+        JLabel lblUser = new JLabel("User Name:");
+        lblUser.setBounds(20, 20, 150, 25);
+        add(lblUser);
+        JTextField txtUser = new JTextField();
+        txtUser.setBounds(180, 20, 380, 25);
+        add(txtUser);
+
+        JLabel lblLab = new JLabel("Laboratory:");
+        lblLab.setBounds(20, 60, 150, 25);
+        add(lblLab);
+        JTextField txtLab = new JTextField();
+        txtLab.setBounds(180, 60, 380, 25);
+        add(txtLab);
+
+        JLabel lblDetector = new JLabel("Detector Type:");
+        lblDetector.setBounds(20, 100, 150, 25);
+        add(lblDetector);
+        JTextField txtDetector = new JTextField();
+        txtDetector.setBounds(180, 100, 380, 25);
+        add(txtDetector);
+
+        JLabel lblSource = new JLabel("Radioactive Source Name:");
+        lblSource.setBounds(20, 140, 150, 25);
+        add(lblSource);
+        JTextField txtSource = new JTextField();
+        txtSource.setBounds(180, 140, 380, 25);
+        add(txtSource);
+
+        JLabel lblActivity = new JLabel("Activity (μCi):");
+        lblActivity.setBounds(20, 180, 120, 25);
+        add(lblActivity);
+        JTextField txtActivity = new JTextField();
+        txtActivity.setBounds(140, 180, 100, 25);
+        add(txtActivity);
+
+        JLabel lblDate = new JLabel("Production Date:");
+        lblDate.setBounds(260, 180, 120, 25);
+        add(lblDate);
+        JTextField txtDate = new JTextField();
+        txtDate.setBounds(380, 180, 180, 25);
+        add(txtDate);
+
+        JLabel lblVoltage = new JLabel("Applied Voltage (V):");
+        lblVoltage.setBounds(20, 220, 150, 25);
+        add(lblVoltage);
+        JTextField txtVoltage = new JTextField();
+        txtVoltage.setBounds(180, 220, 380, 25);
+        add(txtVoltage);
+
+        JLabel lblTime = new JLabel("Counting Time (s):");
+        lblTime.setBounds(20, 260, 150, 25);
+        add(lblTime);
+        JTextField txtTime = new JTextField();
+        txtTime.setBounds(180, 260, 380, 25);
+        add(txtTime);
+
+        JLabel lblRepetitions = new JLabel("Number of Repetitions:");
+        lblRepetitions.setBounds(20, 300, 150, 25);
+        add(lblRepetitions);
+        JTextField txtRepetitions = new JTextField();
+        txtRepetitions.setBounds(180, 300, 380, 25);
+        add(txtRepetitions);
+
+        JLabel lblDeadTime = new JLabel("Dead Time (μs):");
+        lblDeadTime.setBounds(20, 340, 150, 25);
+        add(lblDeadTime);
+        JTextField txtDeadTime = new JTextField();
+        txtDeadTime.setBounds(180, 340, 380, 25);
+        add(txtDeadTime);
+
+        JLabel lblSaturation = new JLabel("Saturation (cpm):");
+        lblSaturation.setBounds(20, 380, 150, 25);
+        add(lblSaturation);
+        JTextField txtSaturation = new JTextField();
+        txtSaturation.setBounds(180, 380, 380, 25);
+        add(txtSaturation);
+
+        // =========================
+        // Buttons
+        // =========================
+        JButton btnSave = new JButton("Save");
+        btnSave.setBounds(180, 420, 100, 30);
+        add(btnSave);
+
+        JButton btnCancel = new JButton("Cancel");
+        btnCancel.setBounds(300, 420, 100, 30);
+        add(btnCancel);
+
+        // Cancel closes the window
+        btnCancel.addActionListener(e -> dispose());
+
+        setVisible(true);
+    }
+}

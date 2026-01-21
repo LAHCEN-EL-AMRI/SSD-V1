@@ -1,0 +1,83 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.io.*;
+import java.util.ArrayList;
+import java.text.DecimalFormat;
+
+public class FileLoader {
+
+    private JTable table;
+    private DefaultTableModel tableModel;
+
+    public FileLoader(JTable table) {
+        this.table = table;
+        this.tableModel = (DefaultTableModel) table.getModel();
+        openFileDialog();
+    }
+
+    private void openFileDialog() {
+        JFileChooser fileChooser = new JFileChooser();
+
+        // Ouvrir directement dans le dossier "File" du projet
+        java.io.File fileFolder = new java.io.File("File");
+        if (!fileFolder.exists()) {
+            fileFolder.mkdirs(); // créer le dossier si inexistant
+        }
+        fileChooser.setCurrentDirectory(fileFolder);
+
+        fileChooser.setDialogTitle("Select a .dat file");
+        int userSelection = fileChooser.showOpenDialog(null);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            java.io.File selectedFile = fileChooser.getSelectedFile();
+            readFile(selectedFile);
+        }
+    }
+
+    private void readFile(java.io.File file) {
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+
+            String line;
+            ArrayList<Double> valuesN = new ArrayList<>();
+
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    String[] parts = line.split("\\s+");
+                    for (String part : parts) {
+                        try {
+                            double val = Double.parseDouble(part);
+                            valuesN.add(val);
+                        } catch (NumberFormatException e) {
+                            // ignorer les valeurs non numériques
+                        }
+                    }
+                }
+            }
+
+            // Format à deux décimales pour ΔN
+            DecimalFormat df = new DecimalFormat("#0.00");
+
+            // Remplir le tableau
+            tableModel.setRowCount(0);
+            int index = 1;
+
+            for (double n : valuesN) {
+                double deltaN = Math.sqrt(n);
+                tableModel.addRow(new Object[]{
+                        index++,
+                        n,
+                        df.format(deltaN) // deux chiffres après la virgule
+                });
+            }
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "Error reading file: " + e.getMessage(),
+                    "File Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+}

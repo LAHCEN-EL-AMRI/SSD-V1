@@ -1,0 +1,173 @@
+import javax.swing.*;
+import java.awt.*;
+import java.io.*;
+import java.util.Properties;
+
+public class Infos extends JFrame {
+
+    private static final long serialVersionUID = 1L;
+
+    // Champs accessibles partout dans la classe
+    private JTextField txtUser, txtLab, txtDetector, txtSource, txtActivity,
+            txtDate, txtVoltage, txtTime, txtRepetitions, txtDeadTime, txtSaturation;
+
+    private final File dataFile = new File("Data/dat.dat");
+
+    public Infos() {
+
+        setTitle("Additional Information");
+        setSize(600, 500);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLayout(null);
+
+        // =========================
+        // Labels & TextFields
+        // =========================
+
+        addLabel("User Name:", 20, 20);
+        txtUser = addField(180, 20);
+
+        addLabel("Laboratory:", 20, 60);
+        txtLab = addField(180, 60);
+
+        addLabel("Detector Type:", 20, 100);
+        txtDetector = addField(180, 100);
+
+        addLabel("Radioactive Source Name:", 20, 140);
+        txtSource = addField(180, 140);
+
+        addLabel("Activity (μCi):", 20, 180);
+        txtActivity = addField(140, 180, 100);
+
+        addLabel("Production Date:", 260, 180);
+        txtDate = addField(380, 180, 180);
+
+        addLabel("Applied Voltage (V):", 20, 220);
+        txtVoltage = addField(180, 220);
+
+        addLabel("Counting Time (s):", 20, 260);
+        txtTime = addField(180, 260);
+
+        addLabel("Number of Repetitions:", 20, 300);
+        txtRepetitions = addField(180, 300);
+
+        addLabel("Dead Time (μs):", 20, 340);
+        txtDeadTime = addField(180, 340);
+
+        addLabel("Saturation (cpm):", 20, 380);
+        txtSaturation = addField(180, 380);
+
+        // =========================
+        // Buttons
+        // =========================
+
+        JButton btnSave = new JButton("Save");
+        btnSave.setBounds(180, 420, 100, 30);
+        add(btnSave);
+
+        JButton btnCancel = new JButton("Cancel");
+        btnCancel.setBounds(300, 420, 100, 30);
+        add(btnCancel);
+
+        btnCancel.addActionListener(e -> dispose());
+        btnSave.addActionListener(e -> saveToFile());
+
+        // 🔹 Charger automatiquement le fichier
+        loadFromFile();
+
+        setVisible(true);
+    }
+
+    // =========================
+    // Méthodes utilitaires UI
+    // =========================
+
+    private void addLabel(String text, int x, int y) {
+        JLabel lbl = new JLabel(text);
+        lbl.setBounds(x, y, 150, 25);
+        add(lbl);
+    }
+
+    private JTextField addField(int x, int y) {
+        return addField(x, y, 380);
+    }
+
+    private JTextField addField(int x, int y, int width) {
+        JTextField txt = new JTextField();
+        txt.setBounds(x, y, width, 25);
+        add(txt);
+        return txt;
+    }
+
+    // =========================
+    // Lecture du fichier
+    // =========================
+
+    private void loadFromFile() {
+        if (!dataFile.exists()) return;
+
+        Properties prop = new Properties();
+
+        try (FileInputStream fis = new FileInputStream(dataFile)) {
+            prop.load(fis);
+
+            txtUser.setText(prop.getProperty("UserName", ""));
+            txtLab.setText(prop.getProperty("Laboratory", ""));
+            txtDetector.setText(prop.getProperty("DetectorType", ""));
+            txtSource.setText(prop.getProperty("SourceName", ""));
+            txtActivity.setText(prop.getProperty("Activity", ""));
+            txtDate.setText(prop.getProperty("ProductionDate", ""));
+            txtVoltage.setText(prop.getProperty("Voltage", ""));
+            txtTime.setText(prop.getProperty("CountingTime", ""));
+            txtRepetitions.setText(prop.getProperty("Repetitions", ""));
+            txtDeadTime.setText(prop.getProperty("DeadTime", ""));
+            txtSaturation.setText(prop.getProperty("Saturation", ""));
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error reading data file",
+                    "File Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // =========================
+    // Écriture dans le fichier
+    // =========================
+
+    private void saveToFile() {
+        Properties prop = new Properties();
+
+        prop.setProperty("UserName", txtUser.getText());
+        prop.setProperty("Laboratory", txtLab.getText());
+        prop.setProperty("DetectorType", txtDetector.getText());
+        prop.setProperty("SourceName", txtSource.getText());
+        prop.setProperty("Activity", txtActivity.getText());
+        prop.setProperty("ProductionDate", txtDate.getText());
+        prop.setProperty("Voltage", txtVoltage.getText());
+        prop.setProperty("CountingTime", txtTime.getText());
+        prop.setProperty("Repetitions", txtRepetitions.getText());
+        prop.setProperty("DeadTime", txtDeadTime.getText());
+        prop.setProperty("Saturation", txtSaturation.getText());
+
+        try {
+            dataFile.getParentFile().mkdirs(); // crée le dossier si absent
+
+            try (FileOutputStream fos = new FileOutputStream(dataFile)) {
+                prop.store(fos, "Additional Measurement Information");
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Data saved successfully",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error saving data file",
+                    "File Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}

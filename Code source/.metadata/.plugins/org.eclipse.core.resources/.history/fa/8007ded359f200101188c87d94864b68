@@ -1,0 +1,236 @@
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.swing.*;
+import java.awt.Color;
+
+import org.apache.pdfbox.pdmodel.*;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import javax.swing.JTable;
+
+public class Export {
+
+    private Main main;
+    private float y;
+    private PDPageContentStream content;
+    private PDType0Font font;
+    private PDType0Font fontBold;
+
+    public Export(Main main) {
+        this.main = main;
+        exportPDF();
+    }
+
+    private void exportPDF() {
+        PDDocument document = null;
+        try {
+            document = new PDDocument();
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+
+            // Charger police Unicode
+            font = PDType0Font.load(document, new File("C:/Windows/Fonts/arial.ttf"));
+            fontBold = font; // utiliser Arial pour Bold si pas autre police
+
+            content = new PDPageContentStream(document, page);
+            y = 770;
+
+            // =========================
+            // HEADER avec logo et infos projet
+            // =========================
+            drawHeader(document);
+
+            // =========================
+            // TITLE
+            // =========================
+            y -= 30;
+            writeTitle("Report on the Statistical Study of the Detector");
+
+            // =========================
+            // ADDITIONAL INFORMATIONS
+            // =========================
+            writeSection("Additional informations");
+            writeInfosFromFile();
+
+            // =========================
+            // OPERATING CONDITIONS
+            // =========================
+            writeSection("Operating conditions");
+            writeLineColored("Group width (l)", main.textField.getText());
+            writeLineColored("N", main.textField_1.getText());
+            writeLineColored("Mean (X̄)", main.textField_2.getText());
+            writeLineColored("σ_theoretical", main.textField_3.getText());
+            writeLineColored("σ_experimental", main.textField_4.getText());
+            writeLineColored("χ²", main.textField_6.getText());
+            writeLineColored("Degrees of freedom (L)", main.textField_7.getText());
+            writeLineColored("Probability P", main.textField_8.getText());
+
+            // =========================
+            // TABLEAU MESURÉ (i, N, ΔN)
+            // =========================
+            writeSection("Measured data");
+            writeTable(main.table);
+
+            content.close();
+
+            // =========================
+            // Sauvegarde PDF
+            // =========================
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            File defaultDir = new File("pdf_Export");
+            if (!defaultDir.exists()) defaultDir.mkdirs();
+
+            String defaultFileName = "report_" + sdf.format(new Date()) + ".pdf";
+
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(defaultDir);
+            fileChooser.setSelectedFile(new File(defaultDir, defaultFileName));
+            int option = fileChooser.showSaveDialog(null);
+
+            if (option == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                document.save(selectedFile);
+                JOptionPane.showMessageDialog(null, "PDF saved at:\n" + selectedFile.getAbsolutePath());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error creating PDF:\n" + e.getMessage());
+        } finally {
+            try {
+                if (document != null) document.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // =========================
+    // DRAW HEADER
+    // =========================
+    private void drawHeader(PDDocument document) throws IOException {
+        // Logo
+        try {
+            PDImageXObject logo = PDImageXObject.createFromFile("icons/image.PNG", document);
+            content.drawImage(logo, 450, 750, 100, 50); // position X,Y, largeur, hauteur
+        } catch (Exception e) {
+            System.out.println("Logo not found");
+        }
+
+        // Infos projet à gauche
+        writeLineAt("SSD", 50, 770, fontBold, 14);
+        writeLineAt("Version : 1.0", 50, 755, font, 9);
+        writeLineAt("Lien : https://github.com/LAHCEN-EL-AMRI", 50, 740, font, 9);
+        writeLineAt("G_mail: lahssenelamri@gmail.com", 50, 725, font, 9);
+
+        // Date/heure à droite
+        SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yy");
+        SimpleDateFormat sdfTime = new SimpleDateFormat("HH:mm:ss");
+        writeLineAt("Printed on: " + sdfDate.format(new Date()), 400, 755, font, 12);
+        writeLineAt("Time: " + sdfTime.format(new Date()), 400, 740, font, 12);
+
+        // Ligne horizontale
+        content.setStrokingColor(Color.BLACK);
+        content.setLineWidth(1);
+        content.moveTo(50, 710);
+        content.lineTo(550, 710);
+        content.stroke();
+
+        y = 700; // mettre curseur sous ligne
+    }
+
+    // =========================
+    // Helpers PDF
+    // =========================
+    private void writeTitle(String text) throws IOException {
+        content.beginText();
+        content.setFont(fontBold, 16);
+        content.newLineAtOffset(70, y);
+        content.showText(text);
+        content.endText();
+        y -= 30;
+    }
+
+    private void writeSection(String text) throws IOException {
+        y -= 20;
+        content.beginText();
+        content.setFont(fontBold, 14);
+        content.newLineAtOffset(50, y);
+        content.showText(text);
+        content.endText();
+        y -= 15;
+    }
+
+    private void writeLine(String text) throws IOException {
+        content.beginText();
+        content.setFont(font, 12);
+        content.newLineAtOffset(60, y);
+        content.showText(text);
+        content.endText();
+        y -= 14;
+    }
+
+    private void writeLineColored(String key, String value) throws IOException {
+        content.beginText();
+        content.setFont(font, 12);
+        content.newLineAtOffset(60, y);
+        content.showText(key + ": ");
+        content.endText();
+
+        float textWidth = font.getStringWidth(key + ": ") / 1000 * 12;
+        content.beginText();
+        content.setNonStrokingColor(Color.BLUE);
+        content.setFont(font, 12);
+        content.newLineAtOffset(60 + textWidth, y);
+        content.showText(value);
+        content.endText();
+        content.setNonStrokingColor(Color.BLACK);
+        y -= 14;
+    }
+
+    private void writeLineAt(String text, float x, float yPos, PDType0Font fontUsed, int fontSize) throws IOException {
+        content.beginText();
+        content.setFont(fontUsed, fontSize);
+        content.newLineAtOffset(x, yPos);
+        content.showText(text);
+        content.endText();
+    }
+
+    private void writeInfosFromFile() throws IOException {
+        File file = new File("Data/dat.dat");
+        if (!file.exists()) {
+            writeLine("No additional information file found.");
+            return;
+        }
+
+        String[] labels = {
+            "User Name", "Laboratory", "Detector Type", "Source",
+            "Activity", "Production Date", "Applied Voltage", "Counting Time",
+            "Repetitions", "Dead Time", "Saturation", "Other informations"
+        };
+
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String line;
+        int i = 0;
+
+        while ((line = br.readLine()) != null && i < labels.length) {
+            writeLineColored(labels[i], line);
+            i++;
+        }
+        br.close();
+    }
+
+    private void writeTable(JTable table) throws IOException {
+        for (int row = 0; row < table.getRowCount(); row++) {
+            StringBuilder line = new StringBuilder();
+            for (int col = 0; col < table.getColumnCount(); col++) {
+                Object val = table.getValueAt(row, col);
+                line.append(val == null ? "" : val.toString()).append("   ");
+            }
+            writeLine(line.toString());
+        }
+    }
+}

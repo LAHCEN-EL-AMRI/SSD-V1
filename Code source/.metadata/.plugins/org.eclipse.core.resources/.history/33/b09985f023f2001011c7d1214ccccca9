@@ -1,0 +1,46 @@
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import java.awt.Font;
+
+public class Chi2_Comment {
+
+    /**
+     * Méthode pour générer le commentaire en fonction de la valeur de probabilité
+     */
+    public static void showComment() {
+        if (Main.textField_8 == null || Main.textField_8.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(null,
+                    "No probability value found in textField_8.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String prob = Main.textField_8.getText().trim();  // récupérer la probabilité
+        String comment;
+
+        // Générer le commentaire selon la valeur trouvée
+        switch (prob) {
+            case "0.995" -> comment = "The detector is highly consistent with theoretical expectations.";
+            case "0.975" -> comment = "The detector is consistent, small variations acceptable.";
+            case "0.95"  -> comment = "The detector is consistent, moderate variations may exist.";
+            case "0.90"  -> comment = "The detector is acceptable, interpret with caution.";
+            case "0.10"  -> comment = "The detector deviates from theory, results less reliable.";
+            case "0.05"  -> comment = "The detector is unreliable, check measurements.";
+            case "0.025" -> comment = "The detector shows strong divergence, anomalies detected.";
+            case "0.01"  -> comment = "The detector is highly divergent, results not acceptable.";
+            case "0.005" -> comment = "The detector is extremely divergent, measurements invalid.";
+            default      -> comment = "No comment available for this value.";
+        }
+
+        // Afficher le commentaire dans le JLabel lblNewLabel_7
+        if (Main.lblNewLabel_7 != null) {
+            Main.lblNewLabel_7.setText(comment);
+            Main.lblNewLabel_7.setFont(new Font("Tahoma", Font.BOLD, 12));
+        } else {
+            // Si le JLabel n'est pas défini, afficher dans une boîte de dialogue
+            JOptionPane.showMessageDialog(null, comment, "Chi² Comment", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+}

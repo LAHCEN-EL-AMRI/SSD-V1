@@ -1,0 +1,165 @@
+import javax.swing.JFrame;
+import javax.swing.table.DefaultTableModel;
+import java.awt.Color;
+import java.awt.BasicStroke;
+import java.awt.Font;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.DatasetRenderingOrder;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.data.xy.XYBarDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.data.xy.IntervalXYDataset;
+
+public class Graph extends JFrame {
+
+    private static final long serialVersionUID = 1L;
+    private JFreeChart chart;
+
+    /* ==========================================================
+       CONSTRUCTEUR NORMAL (BOUTON → AFFICHAGE JFrame)
+       ========================================================== */
+    public Graph(DefaultTableModel model) {
+        this(model, true);
+    }
+
+    /* ==========================================================
+       CONSTRUCTEUR PDF (SANS AFFICHAGE)
+       ========================================================== */
+    public Graph(DefaultTableModel model, boolean showFrame) {
+
+        chart = buildChart(model);
+
+        if (showFrame) {
+            setTitle("Statistical graphical visualization");
+            setSize(1000, 650);
+            setLocationRelativeTo(null);
+            setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+            ChartPanel chartPanel = new ChartPanel(chart);
+            chartPanel.setMouseWheelEnabled(true);
+
+            setContentPane(chartPanel);
+            setVisible(true);
+        }
+    }
+
+    /* ==========================================================
+       ACCÈS AU GRAPHE (EXPORT PDF)
+       ========================================================== */
+    public JFreeChart getChart() {
+        return chart;
+    }
+
+    /* ==========================================================
+       CONSTRUCTION DU GRAPHE (UNE SEULE FOIS)
+       ========================================================== */
+    private JFreeChart buildChart(DefaultTableModel model) {
+
+        XYSeries histSeries  = new XYSeries("F(Xi) observed");
+        XYSeries curveSeries = new XYSeries("N·L·P(Xi) theoretical");
+
+        for (int i = 0; i < model.getRowCount(); i++) {
+
+            Object xiObj  = model.getValueAt(i, 1);
+            Object niObj  = model.getValueAt(i, 2);
+            Object nlpObj = (model.getColumnCount() > 4) ? model.getValueAt(i, 4) : null;
+
+            if (xiObj == null || niObj == null) continue;
+            if (xiObj.toString().trim().isEmpty()) continue;
+
+            try {
+                double Xi = parseValue(xiObj);
+                double ni = parseValue(niObj);
+                histSeries.add(Xi, ni);
+
+                if (nlpObj != null && !nlpObj.toString().trim().isEmpty()) {
+                    curveSeries.add(Xi, parseValue(nlpObj));
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+
+        XYSeriesCollection histCollection = new XYSeriesCollection(histSeries);
+        double barWidth = estimateBinWidth(model);
+        IntervalXYDataset histDataset = new XYBarDataset(histCollection, barWidth);
+
+        XYSeriesCollection curveDataset = new XYSeriesCollection(curveSeries);
+
+        JFreeChart chart = ChartFactory.createXYBarChart(
+                "Histogram and theoretical curve",
+                "Xi",
+                false,
+                "Frequency",
+                histDataset,
+                PlotOrientation.VERTICAL,
+                true,
+                true,
+                false
+        );
+
+        chart.setAntiAlias(true);
+
+        XYPlot plot = chart.getXYPlot();
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
+        plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
+
+        Font titleFont  = new Font("SansSerif", Font.BOLD, 18);
+        Font axisFont   = new Font("SansSerif", Font.BOLD, 14);
+        Font tickFont   = new Font("SansSerif", Font.BOLD, 13);
+        Font legendFont = new Font("SansSerif", Font.BOLD, 13);
+
+        chart.getTitle().setFont(titleFont);
+        chart.getLegend().setItemFont(legendFont);
+
+        NumberAxis xAxis = (NumberAxis) plot.getDomainAxis();
+        NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
+
+        xAxis.setLabelFont(axisFont);
+        yAxis.setLabelFont(axisFont);
+        xAxis.setTickLabelFont(tickFont);
+        yAxis.setTickLabelFont(tickFont);
+
+        XYBarRenderer barRenderer = (XYBarRenderer) plot.getRenderer();
+        barRenderer.setSeriesPaint(0, new Color(0, 102, 204, 180));
+        barRenderer.setDrawBarOutline(false);
+        barRenderer.setShadowVisible(false);
+
+        plot.setDataset(1, curveDataset);
+        XYLineAndShapeRenderer lineRenderer = new XYLineAndShapeRenderer(true, false);
+        lineRenderer.setSeriesPaint(0, Color.RED);
+        lineRenderer.setSeriesStroke(0, new BasicStroke(2.5f));
+        plot.setRenderer(1, lineRenderer);
+
+        plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
+
+        return chart;
+    }
+
+    /* ==========================================================
+       UTILS
+       ========================================================== */
+    private double parseValue(Object obj) {
+        return Double.parseDouble(obj.toString().trim().replace(",", "."));
+    }
+
+    private double estimateBinWidth(DefaultTableModel model) {
+        Double x1 = null, x2 = null;
+
+        for (int i = 0; i < model.getRowCount(); i++) {
+            Object xi = model.getValueAt(i, 1);
+            if (xi != null && !xi.toString().trim().isEmpty()) {
+                if (x1 == null) x1 = parseValue(xi);
+                else { x2 = parseValue(xi); break; }
+            }
+        }
+        return (x1 != null && x2 != null) ? Math.abs(x2 - x1) : 1.0;
+    }
+}
