@@ -1,16 +1,16 @@
 # SSD v1 - Statistical study of detectors (version 1)
  
 The **SSD v1** software is a dedicated tool for the statistical study of ionizing gamma-ray detectors, performed automatically. It supports various types of detectors, including:
-Gas detectors (Geiger-Müller, ionization chambers)
-Semiconductor detectors (GeHP, Si)
-Scintillation detectors (NaI(Tl), CsI, etc.)
+Gas detectors (Geiger-Müller, ionization chambers),
+Semiconductor detectors (GeHP, Si), and 
+Scintillation detectors (NaI(Tl), CsI, etc.).
 Users can input their experimental measurements in two ways:
 Importing an external file in .dat format, containing repeated measurements performed under the same experimental conditions.
 Direct input via the software’s graphical interface, usually by entering only the second column (N) corresponding to the measured values.
 SSD v1 then automatically performs classical statistical analysis of the data. The study generally follows several steps:
-Calculation of theoretical and experimental standard deviations, to assess the measurement dispersion and detector precision.
-Application of the Gaussian distribution adapted to the Poisson law, which accurately models the distribution of rare events typical in ionizing radiation measurements.
-Pearson’s chi-square (χ²) test, used to compare observed and theoretical distributions and validate the statistical consistency of the measurements.
+-Calculation of theoretical and experimental standard deviations, to assess the measurement dispersion and detector precision.
+-Application of the Gaussian distribution adapted to the Poisson law, which accurately models the distribution of rare events typical in ionizing radiation measurements.
+-Pearson’s chi-square (χ²) test, used to compare observed and theoretical distributions and validate the statistical consistency of the measurements.
 
 SSD v1 is free software for non-commercial use only.
 © 2026 Lahcen El Amri
